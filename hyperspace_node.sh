@@ -12,17 +12,6 @@ echo "Curated with ❤️ by 0xjay"
 echo "Follow me on X: https://x.com/0xjay_wins"
 echo "=============================================="
 echo ""
-
-# ----------------------------
-# Security Disclaimer
-# ----------------------------
-echo "WARNING: This script will handle your private keys. Ensure you trust the source of this script."
-read -p "Do you want to continue? (y/n) " -n 1 -r
-echo  # Add this line to move to the next line after user input
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-  exit 1
-fi
-
 # ----------------------------
 # Cleanup
 # ----------------------------
