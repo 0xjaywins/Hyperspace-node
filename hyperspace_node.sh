@@ -13,15 +13,9 @@ echo "Follow me on X: https://x.com/0xjay_wins"
 echo "=============================================="
 echo ""
 
-# ----------------------------
-# Security Disclaimer
-# ----------------------------
-echo "WARNING: This script will handle your private keys. Ensure you trust the source of this script."
-# ----------------------------
 # Install Dependencies
 # ----------------------------
 echo "Installing dependencies..."
-
 # Install curl and screen
 if ! command -v curl &> /dev/null || ! command -v screen &> /dev/null; then
 echo "Installing curl and screen..."
@@ -42,7 +36,7 @@ fi
 if ! command -v aios-cli &> /dev/null; then
 echo "Installing aios-cli..."
   npm install -g @hyperspace/aios-cli
-  echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.bashrc
+echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.bashrc
   source ~/.bashrc
 fi
 
@@ -61,7 +55,7 @@ echo "Backing up old key securely..."
   chmod 700 ~/.hyperspace/secure
   cp ~/.config/key.pem ~/.hyperspace/secure/key_old.pem
   chmod 600 ~/.hyperspace/secure/key_old.pem
-  echo "Old key backed up to ~/.hyperspace/secure/key_old.pem"
+echo "Old key backed up to ~/.hyperspace/secure/key_old.pem"
   rm ~/.config/key.pem
 fi
 
