@@ -26,15 +26,5 @@ This script automates the setup of a Hyperspace node, including installation, mo
 Run the following command in your terminal to download and execute the script:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/your-username/hyperspace-node-setup/main/hyperspace_setup.sh | bash
+curl -sSL https://raw.githubusercontent.com/your-username/hyperspace-node-setup/main/hyperspace_setup.sh | bash && chmod +x hyperspace_setup.sh && ./hyperspace_setup.sh
 
-## Security
-
-### Private Key Safety
-- Your private key is stored in `~/.hyperspace/secure/key.pem` with restricted permissions.
-- Only the owner (you) can access the key.
-
-### Accessing Your Private Key
-To view your private key, use:
-```bash
-cat ~/.hyperspace/secure/key.pem
