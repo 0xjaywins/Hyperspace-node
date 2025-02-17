@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Hyperspace Node Setup Script (Secure and Simple)
-# Brought to you by 0xjay_wins 🚀
+# Brought to you by 0xjay 🚀
 
 # ----------------------------
 # Welcome Message
 # ----------------------------
 echo "=============================================="
 echo "Welcome to the Hyperspace Node Setup Script!"
-echo "Curated with ❤️ by 0xjay_wins"
+echo "Curated with ❤️ by 0xjay"
 echo "Follow me on X: https://x.com/0xjay_wins"
 echo "=============================================="
 echo ""
@@ -112,6 +112,6 @@ echo "Your private key is securely stored at ~/.hyperspace/secure/key.pem."
 echo "To access your key, use:"
 echo "  cat ~/.hyperspace/secure/key.pem"
 echo ""
-echo "Thank you for using the Hyperspace Node Setup Script by 0xjay_wins!"
+echo "Thank you for using the Hyperspace Node Setup Script by 0xjay!"
 echo "Follow me on X for updates: https://x.com/0xjay_wins"
 echo "=============================================="
