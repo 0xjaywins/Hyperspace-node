@@ -26,5 +26,4 @@ This script automates the setup of a Hyperspace node, including installation, mo
 Run the following command in your terminal to download and execute the script:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/0xjaywins/Hyperspace-node/refs/heads/main/hyperspace_node.sh | bash && chmod +x hyperspace_node.sh && ./hyperspace_node.sh
-
+curl -sSL https://raw.githubusercontent.com/0xjaywins/Hyperspace-node/refs/heads/main/hyperspace_node.sh | bash
