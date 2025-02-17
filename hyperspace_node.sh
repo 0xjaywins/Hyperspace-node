@@ -37,6 +37,7 @@ if [ -f ~/.config/key.pem ]; then
   mkdir -p ~/.hyperspace/secure
   chmod 700 ~/.hyperspace/secure
   cp ~/.config/key.pem ~/.hyperspace/secure/key_old.pem
+  chmod 600 ~/.hyperspace/secure/key_old.pem
   echo "Old key backed up to ~/.hyperspace/secure/key_old.pem"
   rm ~/.config/key.pem
 fi
@@ -47,7 +48,9 @@ fi
 echo "Installing Hyperspace..."
 curl -s https://download.hyper.space/api/install | bash
 
-# Step 1: Start daemon in a screen session
+# ----------------------------
+# Screen Session Setup
+# ----------------------------
 echo "Creating secure screen session and starting daemon..."
 screen -S hyperspace -dm bash -c "aios-cli start; exec bash"
 
@@ -56,15 +59,27 @@ echo "Detaching from screen session to install model..."
 sleep 2
 screen -d -S hyperspace
 
-# Step 2: Install model
+# ----------------------------
+# Model Setup
+# ----------------------------
 echo "Installing Mistral-7B model..."
 aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf
 
-# Step 3: Reattach to screen, cancel logs, and connect to model
+# ----------------------------
+# Connection
+# ----------------------------
 echo "Reattaching to screen session to connect to model..."
 screen -S hyperspace -X stuff "^C"  # Cancel logs (Ctrl+C)
 screen -S hyperspace -X stuff "aios-cli start --connect\n"
 sleep 20
+
+# Verify connection
+if ! aios-cli status | grep -q "connected"; then
+  echo "Connection failed. Restarting..."
+  aios-cli kill
+  screen -S hyperspace -X stuff "aios-cli start --connect\n"
+  sleep 20
+fi
 
 # Detach from screen again
 echo "Detaching from screen session..."
@@ -78,6 +93,15 @@ aios-cli hive allocate 9
 
 echo "Checking Hive points..."
 aios-cli hive points
+
+# ----------------------------
+# Key Backup
+# ----------------------------
+echo "Saving private key securely..."
+mkdir -p ~/.hyperspace/secure
+chmod 700 ~/.hyperspace/secure
+[ -f ~/.config/key.pem ] && cp ~/.config/key.pem ~/.hyperspace/secure/key.pem
+chmod 600 ~/.hyperspace/secure/key.pem
 
 # ----------------------------
 # Completion Message
