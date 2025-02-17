@@ -1,17 +1,57 @@
 #!/bin/bash
 
 # Hyperspace Node Setup Script (Secure and Simple)
-# Brought to you by 0xjay 🚀
+# Brought to you by 0xjay_wins 🚀
 
 # ----------------------------
 # Welcome Message
 # ----------------------------
 echo "=============================================="
 echo "Welcome to the Hyperspace Node Setup Script!"
-echo "Curated with ❤️ by 0xjay"
+echo "Curated with ❤️ by 0xjay_wins"
 echo "Follow me on X: https://x.com/0xjay_wins"
 echo "=============================================="
 echo ""
+
+# ----------------------------
+# Security Disclaimer
+# ----------------------------
+echo "WARNING: This script will handle your private keys. Ensure you trust the source of this script."
+read -p "Do you want to continue? (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  exit 1
+fi
+
+# ----------------------------
+# Install Dependencies
+# ----------------------------
+echo "Installing dependencies..."
+
+# Install curl and screen
+if ! command -v curl &> /dev/null || ! command -v screen &> /dev/null; then
+  echo "Installing curl and screen..."
+  sudo apt update
+  sudo apt install -y curl screen
+fi
+
+# Install Node.js and npm using nvm
+if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
+  echo "Installing Node.js and npm..."
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+  export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  nvm install --lts
+fi
+
+# Install aios-cli
+if ! command -v aios-cli &> /dev/null; then
+  echo "Installing aios-cli..."
+  npm install -g @hyperspace/aios-cli
+  echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.bashrc
+  source ~/.bashrc
+fi
+
 # ----------------------------
 # Cleanup
 # ----------------------------
@@ -89,8 +129,12 @@ aios-cli hive points
 echo "Saving private key securely..."
 mkdir -p ~/.hyperspace/secure
 chmod 700 ~/.hyperspace/secure
-[ -f ~/.config/key.pem ] && cp ~/.config/key.pem ~/.hyperspace/secure/key.pem
-chmod 600 ~/.hyperspace/secure/key.pem
+if [ -f ~/.config/key.pem ]; then
+  cp ~/.config/key.pem ~/.hyperspace/secure/key.pem
+  chmod 600 ~/.hyperspace/secure/key.pem
+else
+  echo "WARNING: Private key not found at ~/.config/key.pem. Please check your installation."
+fi
 
 # ----------------------------
 # Completion Message
@@ -101,6 +145,6 @@ echo "Your private key is securely stored at ~/.hyperspace/secure/key.pem."
 echo "To access your key, use:"
 echo "  cat ~/.hyperspace/secure/key.pem"
 echo ""
-echo "Thank you for using the Hyperspace Node Setup Script by 0xjay!"
+echo "Thank you for using the Hyperspace Node Setup Script by 0xjay_wins!"
 echo "Follow me on X for updates: https://x.com/0xjay_wins"
 echo "=============================================="
