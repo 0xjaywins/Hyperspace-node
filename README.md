@@ -1,24 +1,29 @@
-# Hyperspace-node
-## What the Script Does
-1. **Cleanup**:
-   - Kills existing Hyperspace processes.
-   - Removes old screen sessions and config files.
-   - Backs up your private key (if it exists) to `~/.hyperspace/secure/key_old.pem`.
+# Hyperspace Node Script
 
-2. **Installation**:
-   - Downloads and installs Hyperspace.
-   - Creates a `screen` session for the Hyperspace daemon.
+This script automates the setup of a Hyperspace node, including installation, model setup, and Hive allocation. It is designed to be a **one-click solution** for Linux users.
 
-3. **Model Setup**:
-   - Installs the Mistral-7B model from Hugging Face.
+---
 
-4. **Connection**:
-   - Reattaches to the screen session, cancels logs, and connects to the model.
-   - Detaches from the screen session to keep the daemon running in the background.
+## Features
+- ✅ **Auto-cleanup**: Removes previous installations and conflicts.
+- 🤖 **Model Setup**: Installs the Mistral-7B model automatically.
+- 📊 **Hive Allocation**: Allocates RAM for Hive points (Tier 3 by default).
+- 🔑 **Key Backup**: Saves your private key securely.
 
-5. **Hive Allocation**:
-   - Allocates 9 GB of RAM for Hive points (Tier 3).
-   - Checks Hive points.
+---
 
-6. **Key Backup**:
-   - Saves your new private key to `~/.hyperspace/secure/key.pem`.
+## Prerequisites
+- **Linux OS**: Tested on Ubuntu/Debian.
+- **Dependencies**: Ensure `curl` and `screen` are installed.
+- **RAM**: At least 10 GB of free RAM for Hive allocation.
+- **Internet**: Stable connection for downloading dependencies.
+
+---
+
+## Usage
+
+### One-Click Command
+Run the following command in your terminal to download and execute the script:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/your-username/hyperspace-node-setup/main/hyperspace_setup.sh | bash
