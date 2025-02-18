@@ -10,6 +10,15 @@ echo "Curated with ❤️ by 0xjay_wins"
 echo "Follow me on X: https://x.com/0xjay_wins"
 echo "=============================================="
 echo ""
+# ----------------------------
+# Security Disclaimer
+# ----------------------------
+echo "WARNING: This script will handle your private keys. Ensure you trust the source of this script."
+read -p "Do you want to continue? (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  exit 1
+fi
 
 # ----------------------------
 # Install dependencies
@@ -47,14 +56,29 @@ if ! curl -s https://download.hyper.space/api/install | bash; then
   echo "Failed to install Hyperspace. Please check your internet connection."
   exit 1
 fi
-echo "Sourcing ~/.bashrc to load environment variables..."
-source ~/.bashrc
+
+# ----------------------------
+# Create a function to run commands in a properly sourced environment
+# ----------------------------
+run_with_bashrc() {
+  bash --login -c "cd ~ && $*"
+}
+
+# ----------------------------
+# Verify Installation
+# ----------------------------
+echo "Verifying installation..."
+if ! run_with_bashrc "command -v aios-cli"; then
+  echo "Failed to find aios-cli. The installation may not have completed successfully."
+  echo "Make sure to run 'source ~/.bashrc' or start a new terminal session."
+  exit 1
+fi
 
 # ----------------------------
 # Screen Session Setup
 # ----------------------------
 echo "Creating secure screen session and starting daemon..."
-screen -S hyperspace -dm bash -c "aios-cli start; exec bash"
+run_with_bashrc "screen -S hyperspace -dm bash -c 'aios-cli start; exec bash'"
 
 # Wait for daemon to start
 echo "Waiting for daemon to start..."
@@ -68,18 +92,18 @@ screen -d -S hyperspace 2>/dev/null || true
 # Model Setup
 # ----------------------------
 echo "Installing Mistral-7B model..."
-if ! aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf; then
+if ! run_with_bashrc "aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf"; then
   echo "Failed to install model. Retrying..."
   sleep 5
-  aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf
+  run_with_bashrc "aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf"
 fi
 
 # ----------------------------
 # Connection
 # ----------------------------
 echo "Reattaching to screen session to connect to model..."
-screen -S hyperspace -X stuff "^C"  # Cancel logs (Ctrl+C)
-screen -S hyperspace -X stuff "aios-cli start --connect\n"
+run_with_bashrc "screen -r hyperspace -X stuff '^C'"  # Cancel logs (Ctrl+C)
+run_with_bashrc "screen -r hyperspace -X stuff 'aios-cli start --connect\\n'"
 
 echo "Waiting for connection to establish..."
 sleep 30
@@ -87,16 +111,16 @@ sleep 30
 # Verify connection with retries
 MAX_RETRIES=3
 RETRY_COUNT=0
-while ! aios-cli status | grep -q "connected"; do
+while ! run_with_bashrc "aios-cli status | grep -q 'connected'"; do
   RETRY_COUNT=$((RETRY_COUNT+1))
   if [ $RETRY_COUNT -gt $MAX_RETRIES ]; then
     echo "Failed to connect after $MAX_RETRIES attempts. Please check your configuration."
     exit 1
   fi
   echo "Connection failed. Retrying attempt $RETRY_COUNT of $MAX_RETRIES..."
-  aios-cli kill
+  run_with_bashrc "aios-cli kill"
   sleep 5
-  screen -S hyperspace -X stuff "aios-cli start --connect\n"
+  run_with_bashrc "screen -r hyperspace -X stuff 'aios-cli start --connect\\n'"
   sleep 30
 done
 
@@ -110,14 +134,14 @@ screen -d -S hyperspace 2>/dev/null || true
 # Hive Allocation
 # ----------------------------
 echo "Allocating Hive RAM..."
-if ! aios-cli hive allocate 9; then
+if ! run_with_bashrc "aios-cli hive allocate 9"; then
   echo "Failed to allocate Hive RAM. Retrying..."
   sleep 5
-  aios-cli hive allocate 9
+  run_with_bashrc "aios-cli hive allocate 9"
 fi
 
 echo "Checking Hive points..."
-aios-cli hive points
+run_with_bashrc "aios-cli hive points"
 
 # ----------------------------
 # Key Backup
