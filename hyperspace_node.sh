@@ -26,14 +26,14 @@ echo "Installing dependencies..."
 
 # Install curl and screen
 if ! command -v curl &> /dev/null || ! command -v screen &> /dev/null; then
-  echo "Installing curl and screen..."
+echo "Installing curl and screen..."
   sudo apt update
   sudo apt install -y curl screen
 fi
 
 # Install Node.js and npm using nvm
 if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
-  echo "Installing Node.js and npm..."
+echo "Installing Node.js and npm..."
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
   export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -42,9 +42,9 @@ fi
 
 # Install aios-cli
 if ! command -v aios-cli &> /dev/null; then
-  echo "Installing aios-cli..."
+echo "Installing aios-cli..."
   npm install -g @hyperspace/aios-cli
-  echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.bashrc
+echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.bashrc
   source ~/.bashrc
 fi
 
@@ -58,12 +58,12 @@ rm -rf ~/.hyperspace ~/.cache/hyperspace
 
 # Backup old key securely
 if [ -f ~/.config/key.pem ]; then
-  echo "Backing up old key securely..."
+echo "Backing up old key securely..."
   mkdir -p ~/.hyperspace/secure
   chmod 700 ~/.hyperspace/secure
   cp ~/.config/key.pem ~/.hyperspace/secure/key_old.pem
   chmod 600 ~/.hyperspace/secure/key_old.pem
-  echo "Old key backed up to ~/.hyperspace/secure/key_old.pem"
+echo "Old key backed up to ~/.hyperspace/secure/key_old.pem"
   rm ~/.config/key.pem
 fi
 
