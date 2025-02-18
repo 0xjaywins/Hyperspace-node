@@ -53,9 +53,10 @@ Your private key is securely stored at `~/.config/hyperspace/key.pem` To access 
 
 # Troubleshooting
 ## Common Issues and Solutions
-## 1. Script Fails to Run
-- **Cause**: Missing dependencies (``curl` or `screen`).
-- **Solution**:Install the required tools:
+
+## 1.Script Fails to Run
+ - **Cause**: Missing dependencies (``curl` or `screen`).
+ - **Solution**:Install the required tools:
 
    ```bash
    sudo apt update && sudo apt install curl screen
