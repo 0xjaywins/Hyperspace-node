@@ -22,7 +22,7 @@ screen -S hyperspace -X stuff "aios-cli start
 "
 
 # Wait for daemon to start with a timeout mechanism
-timeout=10
+timeout=20
 while [ $timeout -gt 0 ]; do
     if screen -list | grep -q "hyperspace"; then
         echo "Daemon started successfully. Proceeding..."
@@ -41,7 +41,7 @@ aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruc
 
 # Ensure the daemon has time to initialize before connecting
 echo "Waiting 10 seconds before connecting to model..."
-sleep 10
+sleep 30
 
 echo "Connecting to model..."
 screen -S hyperspace -X stuff "aios-cli start --connect
