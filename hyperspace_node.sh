@@ -18,7 +18,7 @@ screen -S hyperspace -dm
 
 # Start daemon within the screen session
 echo "Starting daemon..."
-screen -S hyperspace -X stuff "aios-cli start
+screen -S hyperspace -X stuff "aios-cli start & sleep 20; pkill -f 'aios-cli start' && echo 'Daemon started'
 "
 
 # Wait for daemon to start with a timeout mechanism
@@ -44,7 +44,7 @@ echo "Waiting 10 seconds before connecting to model..."
 sleep 30
 
 echo "Connecting to model..."
-screen -S hyperspace -X stuff "aios-cli start --connect
+screen -S hyperspace -X stuff "while ! grep -q 'gRPC server listening' <(tail -f ~/.hyperspace/logs/hyperspace.log); do sleep 2; done && aios-cli start --connect
 "
 sleep 20
 
