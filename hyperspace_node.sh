@@ -50,12 +50,6 @@ fi
 echo "Sourcing ~/.bashrc to load environment variables..."
 source ~/.bashrc
 
-# Verify installation
-if ! command -v aios-cli &> /dev/null; then
-  echo "Failed to install aios-cli. Installation script did not complete successfully."
-  exit 1
-fi
-
 # ----------------------------
 # Screen Session Setup
 # ----------------------------
