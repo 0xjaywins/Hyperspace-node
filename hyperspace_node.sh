@@ -24,7 +24,7 @@ echo ""
 # ----------------------------
 echo "WARNING: This script will handle your private keys. Ensure you trust the source of this script."
 read -p "Do you want to continue? (y/n) " -n 1 -r
-echo
+echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   exit 1
 fi
