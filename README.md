@@ -70,16 +70,16 @@ Your private key is securely stored at `~/.config/hyperspace/key.pem` To access 
      1. Check if the session exists:
         ```bash
         screen -ls
-        ```
+      ```
     2. Reattach to the session:
-       ```bash
+        ```bash
        screen -r hyperspace
-       ```
+     ```
     3. If the session is missing, restart the daemon:
        ```bash
        screen -S hyperspace -dm
        screen -S hyperspace -X stuff "aios-cli start\n"
-      ```
+   ```
 ### 4. Script Stops Unexpectedly
    - **Cause**: The script might have encountered an error.
    - **Solution**:
@@ -89,8 +89,8 @@ Your private key is securely stored at `~/.config/hyperspace/key.pem` To access 
          ```
      2. Check the error logs in your terminal for more details.
         ```bash
-       screen -r hyperspace
-       ```
-  ---
+        screen -r hyperspace
+      ```
+---
 ## Support
- ###For additional help, open an issue in this repository or refer to the [Hyperspace documentation.](https://docs.hyperspace.xyz/)
+ ### For additional help, open an issue in this repository or refer to the [Hyperspace documentation.](https://docs.hyperspace.xyz/)
