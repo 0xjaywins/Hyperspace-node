@@ -98,12 +98,9 @@ if run_with_bashrc "screen -ls hyperspace | grep -q Attached"; then
 fi
 
 # Explicitly attach to the screen, send Ctrl+C, then start the connection
-run_with_bashrc "screen -r hyperspace -X stuff $'\003'"  # Send Ctrl+C
-sleep 2
-run_with_bashrc "screen -r hyperspace -X stuff 'aios-cli start --connect\n'"
+run_with_bashrc "screen -r hyperspace -X stuff $'\003' 'aios-cli start --connect\n'"  # Send Ctrl+C
 sleep 2
 run_with_bashrc "screen -d hyperspace"  # Detach again
-
 echo "Waiting for connection to establish..."
 sleep 30
 
