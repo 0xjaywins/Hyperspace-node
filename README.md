@@ -1,4 +1,4 @@
-# Hyperspace Node Setup
+# Hyperspace CLI Node Setup
 
 This script automates the setup of a Hyperspace node, including installation, model setup, and Hive allocation. It is designed to be a **one-click solution** for Linux users.
 
