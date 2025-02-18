@@ -30,7 +30,7 @@ rm -rf ~/.hyperspace ~/.cache/hyperspace
 # Ensure the correct PATH is loaded
 echo "Loading environment variables..."
 source ~/.bashrc  # Source the shell configuration file to load the updated PATH
-export PATH=$PATH:/usr/local/bin  # Add common binary directories to PATH if needed
+
 
 # Install + Setup
 echo "Installing Hyperspace..."
