@@ -139,7 +139,7 @@ echo "Connecting to model in screen session..."
 # Check if daemon needs restart before connecting
 restart_daemon_if_needed
 
-screen -S hyperspace -X stuff "aios-cli connect^M"  # ^M is Enter key
+screen -S hyperspace -X stuff "aios-cli start --connect^M"  # ^M is Enter key
 sleep 5
 
 # ----------------------------
