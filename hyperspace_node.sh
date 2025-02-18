@@ -11,16 +11,12 @@ echo "Follow me on X: https://x.com/0xjay_wins"
 echo "=============================================="
 echo ""
 
-echo "WARNING: This script will handle your private keys. Ensure you trust the source of this script."
-echo "Press Ctrl+C now if you wish to cancel. Continuing in 5 seconds..."
-sleep 5
-
 # ----------------------------
 # Install dependencies
 # ----------------------------
 echo "Checking for required dependencies..."
 if ! command -v screen &> /dev/null; then
-echo "Installing screen..."
+    echo "Installing screen..."
     sudo apt-get update && sudo apt-get install -y screen
 fi
 
@@ -44,6 +40,13 @@ if [ -f ~/.config/key.pem ]; then
 fi
 
 # ----------------------------
+# Create a function to run commands in a properly sourced environment
+# ----------------------------
+run_with_bashrc() {
+  bash --login -c "cd ~ && $*"
+}
+
+# ----------------------------
 # Installation
 # ----------------------------
 echo "Installing Hyperspace..."
@@ -51,13 +54,6 @@ if ! curl -s https://download.hyper.space/api/install | bash; then
   echo "Failed to install Hyperspace. Please check your internet connection."
   exit 1
 fi
-
-# ----------------------------
-# Create a function to run commands in a properly sourced environment
-# ----------------------------
-run_with_bashrc() {
-  bash --login -c "cd ~ && $*"
-}
 
 # ----------------------------
 # Verify Installation
@@ -79,10 +75,6 @@ run_with_bashrc "screen -S hyperspace -dm bash -c 'aios-cli start; exec bash'"
 echo "Waiting for daemon to start..."
 sleep 5
 
-# Detach from screen
-echo "Detaching from screen session..."
-screen -d -S hyperspace 2>/dev/null || true
-
 # ----------------------------
 # Model Setup
 # ----------------------------
@@ -96,9 +88,21 @@ fi
 # ----------------------------
 # Connection
 # ----------------------------
-echo "Reattaching to screen session to connect to model..."
-run_with_bashrc "screen -r hyperspace -X stuff '^C'"  # Cancel logs (Ctrl+C)
-run_with_bashrc "screen -r hyperspace -X stuff 'aios-cli start --connect\\n'"
+echo "Setting up connection in the screen session..."
+
+# First, check if we need to attach to the screen
+if run_with_bashrc "screen -ls hyperspace | grep -q Attached"; then
+  echo "Screen is already attached, detaching first..."
+  run_with_bashrc "screen -d hyperspace"
+  sleep 2
+fi
+
+# Explicitly attach to the screen, send Ctrl+C, then start the connection
+run_with_bashrc "screen -r hyperspace -X stuff $'\003'"  # Send Ctrl+C
+sleep 2
+run_with_bashrc "screen -r hyperspace -X stuff 'aios-cli start --connect\n'"
+sleep 2
+run_with_bashrc "screen -d hyperspace"  # Detach again
 
 echo "Waiting for connection to establish..."
 sleep 30
@@ -106,24 +110,33 @@ sleep 30
 # Verify connection with retries
 MAX_RETRIES=3
 RETRY_COUNT=0
-while ! run_with_bashrc "aios-cli status | grep -q 'connected'"; do
+
+check_connection() {
+  run_with_bashrc "aios-cli status" | grep -q "connected"
+  return $?
+}
+
+while ! check_connection; do
   RETRY_COUNT=$((RETRY_COUNT+1))
   if [ $RETRY_COUNT -gt $MAX_RETRIES ]; then
     echo "Failed to connect after $MAX_RETRIES attempts. Please check your configuration."
     exit 1
   fi
   echo "Connection failed. Retrying attempt $RETRY_COUNT of $MAX_RETRIES..."
+  
+  # Explicitly attach to the screen, send Ctrl+C, kill current process, then restart
+  run_with_bashrc "screen -r hyperspace -X stuff $'\003'"  # Send Ctrl+C
+  sleep 2
   run_with_bashrc "aios-cli kill"
   sleep 5
-  run_with_bashrc "screen -r hyperspace -X stuff 'aios-cli start --connect\\n'"
+  run_with_bashrc "screen -r hyperspace -X stuff 'aios-cli start --connect\n'"
+  sleep 2
+  run_with_bashrc "screen -d hyperspace"  # Detach again
+  
   sleep 30
 done
 
 echo "Connection established successfully!"
-
-# Detach from screen again
-echo "Detaching from screen session..."
-screen -d -S hyperspace 2>/dev/null || true
 
 # ----------------------------
 # Hive Allocation
