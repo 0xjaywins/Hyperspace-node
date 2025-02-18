@@ -20,7 +20,7 @@ sleep 5
 # ----------------------------
 echo "Checking for required dependencies..."
 if ! command -v screen &> /dev/null; then
-    echo "Installing screen..."
+echo "Installing screen..."
     sudo apt-get update && sudo apt-get install -y screen
 fi
 
