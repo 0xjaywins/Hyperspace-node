@@ -32,19 +32,6 @@ while [ $timeout -gt 0 ]; do
     timeout=$((timeout - 1))
 done
 
-# Check if "Another instance is already running" is in the screen log
-if screen -S hyperspace -X hardcopy /tmp/hyperspace_log && grep -q "Another instance is already running" /tmp/hyperspace_log; then
-    echo "Another instance is already running. Killing existing instance..."
-    aios-cli kill
-    sleep 2 # Wait for the process to be killed
-    echo "Retrying daemon start..."
-    screen -S hyperspace -X stuff "aios-cli start
-    "
-    sleep 10 # Wait for the daemon to start again
-else
-    echo "Daemon started successfully."
-fi
-
 # Detach screen to allow smooth execution of the next steps
 screen -d -S hyperspace
 
@@ -56,28 +43,12 @@ aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruc
 echo "Waiting 10 seconds before connecting to model..."
 sleep 40
 
-# Connect to model with error handling for "Another instance is already running"
 echo "Connecting to model..."
 screen -S hyperspace -X stuff "
 aios-cli start --connect
 "
-sleep 2 # Give some time for the command to execute
+sleep 20
 
-# Check if "Another instance is already running" is in the screen log
-if screen -S hyperspace -X hardcopy /tmp/hyperspace_log && grep -q "Another instance is already running" /tmp/hyperspace_log; then
-    echo "Another instance is already running. Killing existing instance..."
-    aios-cli kill
-    sleep 2 # Wait for the process to be killed
-    echo "Retrying connection to model..."
-    screen -S hyperspace -X stuff "aios-cli start --connect
-    "
-    sleep 20
-else
-    echo "Connection to model successful."
-    sleep 20
-fi
-
-# Allocate Hive RAM
 echo "Allocating Hive RAM..."
 aios-cli hive allocate 9
 
