@@ -1,16 +1,32 @@
 #!/bin/bash
 # Hyperspace Node Setup Script (Clean Install + Auto-Setup)
 
-# Function to check and kill existing instances
-check_and_kill_instance() {
-    if aios-cli status 2>&1 | grep -q "Another instance is already running"; then
-        echo "Detected running instance. Killing it..."
-        aios-cli kill
-        sleep 5  # Wait for process to fully terminate
-        return 0
-    fi
-    return 1
-}
+# ----------------------------
+# Source .bashrc
+# ----------------------------
+echo "Sourcing /root/.bashrc to load environment variables..."
+source /root/.bashrc
+
+# ----------------------------
+# Install Dependencies
+# ----------------------------
+echo "Installing dependencies..."
+
+# Install curl and screen
+if ! command -v curl &> /dev/null || ! command -v screen &> /dev/null; then
+  echo "Installing curl and screen..."
+  sudo apt update
+  sudo apt install -y curl screen
+fi
+
+# Install Node.js and npm using nvm
+if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
+  echo "Installing Node.js and npm..."
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+  export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  nvm install --lts
+fi
 
 # Cleanup
 echo "Cleaning up previous installations..."
@@ -26,6 +42,16 @@ curl -s https://download.hyper.space/api/install | bash
 echo "Creating screen session..."
 screen -S hyperspace -dm
 
+# Function to check and kill existing instances
+check_and_kill_instance() {
+    if aios-cli status 2>&1 | grep -q "Another instance is already running"; then
+        echo "Detected running instance. Killing it..."
+        aios-cli kill
+        sleep 5  # Wait for process to fully terminate
+        return 0
+    fi
+    return 1
+}
 # Start daemon within the screen session
 echo "Starting daemon..."
 check_and_kill_instance  # Check before starting
