@@ -4,6 +4,12 @@
 # Brought to you by 0xjay_wins 🚀
 
 # ----------------------------
+# Source .bashrc
+# ----------------------------
+echo "Sourcing /root/.bashrc to load environment variables..."
+source /root/.bashrc
+
+# ----------------------------
 # Welcome Message
 # ----------------------------
 echo "=============================================="
