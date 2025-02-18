@@ -54,7 +54,7 @@ Your private key is securely stored at `~/.config/hyperspace/key.pem` To access 
 # Troubleshooting
 ## Common Issues and Solutions
 
-## 1.Script Fails to Run
+## 1. Script Fails to Run
  - **Cause**: Missing dependencies (``curl` or `screen`).
  - **Solution**:Install the required tools:
 
