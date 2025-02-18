@@ -41,14 +41,6 @@ if [ -f ~/.config/key.pem ]; then
 fi
 
 # ----------------------------
-# Function to check if screen session exists
-# ----------------------------
-check_screen() {
-    screen -ls | grep -q "hyperspace"
-    return $?
-}
-
-# ----------------------------
 # Installation
 # ----------------------------
 echo "Installing Hyperspace..."
@@ -68,48 +60,57 @@ if ! command -v aios-cli &> /dev/null; then
 fi
 
 # ----------------------------
-# Screen Session Setup (Fixed)
+# Start Daemon in a Screen Session (Keep Screen Alive)
 # ----------------------------
-echo "Starting daemon inside screen session..."
-screen -dmS hyperspace bash -c 'aios-cli start; exec bash'  # Start daemon in screen
+echo "Starting daemon inside a screen session..."
+# 'while true; do sleep 9999; done' ensures screen won't exit if 'aios-cli start' returns or crashes
+screen -dmS hyperspace bash -c 'aios-cli start; while true; do sleep 9999; done'
 
-# Wait until screen session is active
-echo "Waiting for daemon to start..."
-sleep 10  # Give time for the daemon to fully start
+# Wait a bit for the daemon to start
+echo "Waiting for daemon to initialize..."
+sleep 10
 
-if ! check_screen; then
-  echo "Error: Screen session did not start properly."
-  exit 1
+# ----------------------------
+# Install Mistral-7B Model
+# ----------------------------
+# We do this OUTSIDE the screen session, but the daemon is already running in the background.
+echo "Installing Mistral-7B model..."
+if ! aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf; then
+  echo "Failed to install model. Retrying..."
+  sleep 5
+  aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf
 fi
 
 # ----------------------------
-# Connect Model (Using Same Screen Session)
+# Connect Model in the Same Screen Session
 # ----------------------------
-echo "Stopping logs inside screen session..."
-screen -S hyperspace -X stuff $'\003'  # Send Ctrl+C to stop logs
+echo "Connecting model inside the same screen session..."
+# First, send Ctrl+C to stop the existing logs (if any)
+screen -S hyperspace -X stuff $'\003'
 sleep 2
 
-echo "Connecting model inside the same screen session..."
+# Now run 'aios-cli start --connect' inside the screen
 screen -S hyperspace -X stuff "aios-cli start --connect\n"
 sleep 5
 
-echo "Detaching from screen session..."
+# Keep the screen alive
+screen -S hyperspace -X stuff "exec bash\n"
+
+# Detach from screen (it's still running)
 screen -d hyperspace
 
 echo "Waiting for connection to establish..."
 sleep 30
 
 # ----------------------------
-# Verify Connection with Retries
+# Verify Connection (Retries)
 # ----------------------------
 MAX_RETRIES=3
 RETRY_COUNT=0
 
 check_connection() {
-  screen -S hyperspace -X stuff "aios-cli status\n"
-  sleep 2
-  screen -S hyperspace -X hardcopy ~/hyperspace_status.log  # Save output
-  grep -q "connected" ~/hyperspace_status.log
+  # We'll just check the daemon status outside the screen
+  aios-cli status | grep -q "connected"
   return $?
 }
 
@@ -119,17 +120,15 @@ while ! check_connection; do
     echo "Failed to connect after $MAX_RETRIES attempts. Please check logs."
     exit 1
   fi
-  echo "Connection failed. Retrying attempt $RETRY_COUNT of $MAX_RETRIES..."
 
-  # Stop any running instance inside the screen
-  screen -S hyperspace -X stuff $'\003'  # Stop any running process
+  echo "Connection failed. Retrying attempt $RETRY_COUNT of $MAX_RETRIES..."
+  screen -S hyperspace -X stuff $'\003'       # Ctrl+C to stop anything
   sleep 2
   screen -S hyperspace -X stuff "aios-cli kill\n"
   sleep 5
   screen -S hyperspace -X stuff "aios-cli start --connect\n"
   sleep 5
-  screen -S hyperspace -X stuff "exec bash\n"  # Keep screen open
-  
+  screen -S hyperspace -X stuff "exec bash\n"
   sleep 30
 done
 
@@ -139,14 +138,14 @@ echo "Connection established successfully!"
 # Hive Allocation
 # ----------------------------
 echo "Allocating Hive RAM..."
-if ! screen -S hyperspace -X stuff "aios-cli hive allocate 9\n"; then
+if ! aios-cli hive allocate 9; then
   echo "Failed to allocate Hive RAM. Retrying..."
   sleep 5
-  screen -S hyperspace -X stuff "aios-cli hive allocate 9\n"
+  aios-cli hive allocate 9
 fi
 
 echo "Checking Hive points..."
-screen -S hyperspace -X stuff "aios-cli hive points\n"
+aios-cli hive points
 
 # ----------------------------
 # Key Backup
