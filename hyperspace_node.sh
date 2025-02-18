@@ -44,7 +44,8 @@ echo "Waiting 10 seconds before connecting to model..."
 sleep 40
 
 echo "Connecting to model..."
-screen -S hyperspace -X stuff "aios-cli start --connect
+screen -S hyperspace -X stuff "
+aios-cli start --connect
 "
 sleep 20
 
