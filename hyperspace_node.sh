@@ -28,15 +28,34 @@ pkill -f "aios-cli" || true
 screen -XS hyperspace quit 2>/dev/null || true
 rm -rf ~/.hyperspace ~/.cache/hyperspace 2>/dev/null || true
 
+# Function to find the key file
+find_key_file() {
+    # Common locations where the key might be
+    key_locations=(
+        "$HOME/.config/key.pem"
+        "$HOME/.hyperspace/key.pem"
+        "$HOME/.local/share/hyperspace/key.pem"
+        "$HOME/.aios/key.pem"
+    )
+    
+    for location in "${key_locations[@]}"; do
+        if [ -f "$location" ]; then
+            echo "$location"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # Backup old key securely
-if [ -f ~/.config/key.pem ]; then
-  echo "Backing up old key securely..."
-  mkdir -p ~/.hyperspace/secure
-  chmod 700 ~/.hyperspace/secure
-  cp ~/.config/key.pem ~/.hyperspace/secure/key_old.pem
-  chmod 600 ~/.hyperspace/secure/key_old.pem
-  echo "Old key backed up to ~/.hyperspace/secure/key_old.pem"
-  rm ~/.config/key.pem
+if old_key=$(find_key_file); then
+    echo "Backing up old key securely..."
+    mkdir -p ~/.hyperspace/secure
+    chmod 700 ~/.hyperspace/secure
+    cp "$old_key" ~/.hyperspace/secure/key_old.pem
+    chmod 600 ~/.hyperspace/secure/key_old.pem
+    echo "Old key backed up to ~/.hyperspace/secure/key_old.pem"
+    rm "$old_key"
 fi
 
 # ----------------------------
@@ -96,7 +115,7 @@ fi
 # ----------------------------
 echo "Starting daemon in a screen session..."
 
-# Kill any existing sessions and processes (already done in cleanup, but just to be sure)
+# Kill any existing sessions and processes
 pkill -f "aios-cli" || true
 screen -XS hyperspace quit 2>/dev/null || true
 
@@ -105,7 +124,7 @@ screen -dmS hyperspace bash -c "source ~/.bashrc && aios-cli start; exec bash"
 echo "Daemon started in screen session 'hyperspace'"
 sleep 10  # Give it time to initialize
 
-# Check if we need to restart daemon (e.g., if "Another instance is already running")
+# Check if we need to restart daemon
 restart_daemon_if_needed
 
 # Detach from screen to continue with model installation
@@ -136,38 +155,44 @@ done
 # Now reattach to the screen session to connect to the model
 echo "Connecting to model in screen session..."
 
-# Check if daemon needs restart before connecting
-restart_daemon_if_needed
+# Send Ctrl+C to stop any running logs
+screen -S hyperspace -X stuff $'\003'
+sleep 2  # Give it time to stop the logs
 
-screen -S hyperspace -X stuff "aios-cli start --connect^M"  # ^M is Enter key
+# Send the connect command
+screen -S hyperspace -X stuff "aios-cli connect^M"
 sleep 5
 
-# ----------------------------
-# Verify Connection
-# ----------------------------
-echo "Verifying connection status..."
-if run_with_bashrc "aios-cli status | grep -q connected"; then
-  echo "Successfully connected to model in screen session."
-else
-  echo "Warning: Could not verify connection. Checking for daemon issues..."
-  
-  # Check if daemon needs restart
-  if restart_daemon_if_needed; then
-    echo "Daemon restarted due to 'Another instance is already running' error."
-    echo "Trying to connect again..."
-    screen -S hyperspace -X stuff "aios-cli connect^M"
-    sleep 5
-  else
-    echo "Attempting to connect again anyway..."
-    screen -S hyperspace -X stuff "aios-cli connect^M"  # Try again
-    sleep 5
-  fi
-  
-  # Check again after second attempt
-  if ! run_with_bashrc "aios-cli status | grep -q connected"; then
-    echo "Warning: Still could not verify connection. Continuing anyway..."
-  fi
-fi
+# Function to ensure key is generated
+ensure_key_generated() {
+    echo "Checking for existing key..."
+    if ! find_key_file > /dev/null; then
+        echo "No existing key found. Generating new key..."
+        # Stop any running processes first
+        screen -S hyperspace -X stuff $'\003'
+        sleep 2
+        
+        # Generate new key
+        screen -S hyperspace -X stuff "aios-cli keys generate^M"
+        sleep 5
+        
+        # Wait for key generation
+        for i in {1..10}; do
+            if find_key_file > /dev/null; then
+                echo "Key successfully generated!"
+                break
+            fi
+            if [ $i -eq 10 ]; then
+                echo "Failed to generate key after multiple attempts."
+                return 1
+            fi
+            sleep 2
+        done
+    else
+        echo "Existing key found."
+    fi
+    return 0
+}
 
 # ----------------------------
 # Hive Allocation
@@ -190,16 +215,31 @@ echo "Checking Hive points..."
 run_with_bashrc "aios-cli hive points"
 
 # ----------------------------
-# Key Backup
+# Key Generation and Backup
 # ----------------------------
-echo "Saving private key securely..."
+echo "Handling key generation and backup..."
+
+# Create secure backup directory
 mkdir -p ~/.hyperspace/secure
 chmod 700 ~/.hyperspace/secure
-if [ -f ~/.config/key.pem ]; then
-  cp ~/.config/key.pem ~/.hyperspace/secure/key.pem
-  chmod 600 ~/.hyperspace/secure/key.pem
+
+# Ensure key is generated
+if ! ensure_key_generated; then
+    echo "Warning: Could not ensure key generation. Please check manually."
 else
-  echo "Warning: key.pem not found in ~/.config/. Please check if key was generated."
+    # Find and backup the key
+    key_path=$(find_key_file)
+    if [ -n "$key_path" ]; then
+        echo "Found key at: $key_path"
+        cp "$key_path" ~/.hyperspace/secure/key.pem
+        chmod 600 ~/.hyperspace/secure/key.pem
+        echo "Key successfully backed up to ~/.hyperspace/secure/key.pem"
+        
+        # Store key path for later use
+        echo "$key_path" > ~/.hyperspace/secure/key_location.txt
+    else
+        echo "Error: Key file not found after generation. Please check manually."
+    fi
 fi
 
 # Detach from screen again to continue with the rest of the script
@@ -211,14 +251,24 @@ echo "You can attach to it anytime with 'screen -r hyperspace'"
 # ----------------------------
 echo "=============================================="
 echo "Setup complete! 🎉"
+
+# More detailed key status message
 if [ -f ~/.hyperspace/secure/key.pem ]; then
-  echo "Your private key is securely stored at ~/.hyperspace/secure/key.pem."
-  echo "To access your key, use:"
-  echo "  cat ~/.hyperspace/secure/key.pem"
+    echo "Your private key is securely backed up at ~/.hyperspace/secure/key.pem"
+    if [ -f ~/.hyperspace/secure/key_location.txt ]; then
+        original_location=$(cat ~/.hyperspace/secure/key_location.txt)
+        echo "Original key location: $original_location"
+    fi
+    echo "To view your key, use:"
+    echo "  cat ~/.hyperspace/secure/key.pem"
+    echo ""
+    echo "IMPORTANT: Keep this key safe! It's required to access your node."
 else
-  echo "Note: No private key was found to back up. If this is unexpected,"
-  echo "please check the installation logs for errors."
+    echo "WARNING: No private key was found or backed up."
+    echo "Please run 'aios-cli keys generate' manually and then"
+    echo "copy the key to ~/.hyperspace/secure/key.pem"
 fi
+
 echo ""
 echo "Thank you for using the Hyperspace Node Setup Script by 0xjay_wins!"
 echo "Follow me on X for updates: https://x.com/0xjay_wins"
