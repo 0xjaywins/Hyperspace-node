@@ -1,9 +1,7 @@
 #!/bin/bash
 # Hyperspace Node Setup Script (Secure and Simple)
 # Brought to you by 0xjay_wins 🚀
-# ----------------------------
-# Welcome Message
-# ----------------------------
+
 echo "=============================================="
 echo "Welcome to the Hyperspace Node Setup Script!"
 echo "Curated with ❤️ by 0xjay_wins"
@@ -40,13 +38,6 @@ if [ -f ~/.config/key.pem ]; then
 fi
 
 # ----------------------------
-# Create a function to run commands in a properly sourced environment
-# ----------------------------
-run_with_bashrc() {
-  bash --login -c "cd ~ && $*"
-}
-
-# ----------------------------
 # Installation
 # ----------------------------
 echo "Installing Hyperspace..."
@@ -59,17 +50,17 @@ fi
 # Verify Installation
 # ----------------------------
 echo "Verifying installation..."
-if ! run_with_bashrc "command -v aios-cli"; then
+if ! command -v aios-cli &> /dev/null; then
   echo "Failed to find aios-cli. The installation may not have completed successfully."
   echo "Make sure to run 'source ~/.bashrc' or start a new terminal session."
   exit 1
 fi
 
 # ----------------------------
-# Screen Session Setup
+# Start Daemon in a Screen Session
 # ----------------------------
 echo "Creating secure screen session and starting daemon..."
-run_with_bashrc "screen -S hyperspace -dm bash -c 'aios-cli start; exec bash'"
+screen -dmS hyperspace bash -c 'aios-cli start; exec bash'
 
 # Wait for daemon to start
 echo "Waiting for daemon to start..."
@@ -79,37 +70,38 @@ sleep 5
 # Model Setup
 # ----------------------------
 echo "Installing Mistral-7B model..."
-if ! run_with_bashrc "aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf"; then
+if ! aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf; then
   echo "Failed to install model. Retrying..."
   sleep 5
-  run_with_bashrc "aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf"
+  aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf
 fi
 
 # ----------------------------
-# Connection
+# Connection Setup (Using Same Screen)
 # ----------------------------
 echo "Setting up connection in the screen session..."
+echo "Attaching to the existing screen session..."
 
-# First, check if we need to attach to the screen
-if run_with_bashrc "screen -ls hyperspace | grep -q Attached"; then
-  echo "Screen is already attached, detaching first..."
-  run_with_bashrc "screen -d hyperspace"
-  sleep 2
-fi
+# Attach to the existing screen session
+screen -r hyperspace
 
-# Explicitly attach to the screen, send Ctrl+C, then start the connection
-run_with_bashrc "screen -r hyperspace -X stuff $'\003' 'aios-cli start --connect\n'"  # Send Ctrl+C
+# Manually stop logs using Ctrl+C
+echo "Stopping logs inside screen session..."
 sleep 2
-run_with_bashrc "screen -d hyperspace"  # Detach again
-echo "Waiting for connection to establish..."
-sleep 30
+screen -S hyperspace -X stuff $'\003'  # Sends Ctrl+C
 
-# Verify connection with retries
+# Now manually run the connection command inside the session
+echo "Starting AIOS connection..."
+screen -S hyperspace -X stuff "aios-cli start --connect\n"
+sleep 10  # Allow time for connection
+
+# Check if the connection is successful
+echo "Verifying connection..."
 MAX_RETRIES=3
 RETRY_COUNT=0
 
 check_connection() {
-  run_with_bashrc "aios-cli status" | grep -q "connected"
+  aios-cli status | grep -q "connected"
   return $?
 }
 
@@ -120,33 +112,36 @@ while ! check_connection; do
     exit 1
   fi
   echo "Connection failed. Retrying attempt $RETRY_COUNT of $MAX_RETRIES..."
-  
-  # Explicitly attach to the screen, send Ctrl+C, kill current process, then restart
-  run_with_bashrc "screen -r hyperspace -X stuff $'\003'"  # Send Ctrl+C
+
+  # Stop current process
+  screen -S hyperspace -X stuff $'\003'  # Sends Ctrl+C
   sleep 2
-  run_with_bashrc "aios-cli kill"
-  sleep 5
-  run_with_bashrc "screen -r hyperspace -X stuff 'aios-cli start --connect\n'"
-  sleep 2
-  run_with_bashrc "screen -d hyperspace"  # Detach again
-  
-  sleep 30
+
+  # Restart connection inside screen
+  screen -S hyperspace -X stuff "aios-cli start --connect\n"
+  sleep 10
 done
 
 echo "Connection established successfully!"
+
+# Detach from the screen **only after** a successful connection
+screen -d hyperspace
+sleep 2
 
 # ----------------------------
 # Hive Allocation
 # ----------------------------
 echo "Allocating Hive RAM..."
-if ! run_with_bashrc "aios-cli hive allocate 9"; then
-  echo "Failed to allocate Hive RAM. Retrying..."
-  sleep 5
-  run_with_bashrc "aios-cli hive allocate 9"
-fi
+screen -r hyperspace
+screen -S hyperspace -X stuff "aios-cli hive allocate 9\n"
+sleep 5
 
 echo "Checking Hive points..."
-run_with_bashrc "aios-cli hive points"
+screen -S hyperspace -X stuff "aios-cli hive points\n"
+sleep 5
+
+# Detach the screen after Hive allocation
+screen -d hyperspace
 
 # ----------------------------
 # Key Backup
