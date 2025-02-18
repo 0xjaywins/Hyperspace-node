@@ -20,11 +20,6 @@ echo "=============================================="
 echo ""
 
 # ----------------------------
-# Security Disclaimer
-# ----------------------------
-echo "WARNING: This script will handle your private keys. Ensure you trust the source of this script.
-
-# ----------------------------
 # Install Dependencies
 # ----------------------------
 echo "Installing dependencies..."
