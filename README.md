@@ -20,8 +20,13 @@ This script automates the setup of a Hyperspace node, including installation, mo
 
 ---
 
-## Usage
+## Load environment variables
+- **You need run `source /root/.bashrc` before running any the One-click commands. This will ensure that the $PATH and other environment variables are correctly loaded**
 
+
+---
+
+## Usage
 ### One-Click Command
 Run the following command in your terminal to download and execute the script:
 
