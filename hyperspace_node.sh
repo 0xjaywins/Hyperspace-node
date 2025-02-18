@@ -2,6 +2,9 @@
 # Hyperspace Node Setup Script (Secure and Simple)
 # Brought to you by 0xjay_wins 🚀
 
+# ----------------------------
+# Welcome Message
+# ----------------------------
 echo "=============================================="
 echo "Welcome to the Hyperspace Node Setup Script!"
 echo "Curated with ❤️ by 0xjay_wins"
@@ -38,6 +41,13 @@ if [ -f ~/.config/key.pem ]; then
 fi
 
 # ----------------------------
+# Create a function to run commands in a properly sourced environment
+# ----------------------------
+run_with_bashrc() {
+  bash --login -c "cd ~ && $*"
+}
+
+# ----------------------------
 # Installation
 # ----------------------------
 echo "Installing Hyperspace..."
@@ -50,94 +60,90 @@ fi
 # Verify Installation
 # ----------------------------
 echo "Verifying installation..."
-if ! command -v aios-cli &> /dev/null; then
+if ! run_with_bashrc "command -v aios-cli"; then
   echo "Failed to find aios-cli. The installation may not have completed successfully."
   echo "Make sure to run 'source ~/.bashrc' or start a new terminal session."
   exit 1
 fi
 
 # ----------------------------
-# Start Daemon in a Screen Session
+# Screen Session Setup (Fixed)
 # ----------------------------
 echo "Creating secure screen session and starting daemon..."
-screen -dmS hyperspace bash -c 'aios-cli start; exec bash'
+screen -dmS hyperspace bash -c 'aios-cli start; exec bash'  # Keeps session active
 
 # Wait for daemon to start
 echo "Waiting for daemon to start..."
 sleep 5
 
 # ----------------------------
-# Model Setup
+# Model Connection (Fixed)
 # ----------------------------
-echo "Installing Mistral-7B model..."
-if ! aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf; then
-  echo "Failed to install model. Retrying..."
-  sleep 5
-  aios-cli models add hf:TheBloke/Mistral-7B-Instruct-v0.1-GGUF:mistral-7b-instruct-v0.1.Q4_K_S.gguf
-fi
-
-# ----------------------------
-# Connection Setup (Using Same Screen)
-# ----------------------------
-echo "Setting up connection inside the existing screen session..."
-echo "Stopping logs inside screen session..."
+echo "Stopping logs and connecting model..."
+screen -S hyperspace -X stuff $'\003'  # Send Ctrl+C to stop logs
 sleep 2
 
-# **Stop the logs inside screen by sending Ctrl+C**
-screen -S hyperspace -X stuff $'\003'  
-sleep 2  
-
-# **Run the connection inside the same screen**
-echo "Starting AIOS connection..."
+# Ensure the model connects inside the same screen session
 screen -S hyperspace -X stuff "aios-cli start --connect\n"
-sleep 10  # Allow time for connection
+sleep 5  # Ensure it starts properly
 
-# **Check if the connection is successful**
-echo "Verifying connection..."
+# Keep screen session active while connecting
+screen -S hyperspace -X stuff "exec bash\n"
+
+echo "Detaching screen session..."
+screen -d hyperspace
+
+echo "Waiting for connection to establish..."
+sleep 30
+
+# ----------------------------
+# Verify Connection with Retries
+# ----------------------------
 MAX_RETRIES=3
 RETRY_COUNT=0
 
 check_connection() {
-  aios-cli status | grep -q "connected"
+  screen -S hyperspace -X stuff "aios-cli status\n"
+  sleep 2
+  screen -S hyperspace -X hardcopy ~/hyperspace_status.log  # Save output
+  grep -q "connected" ~/hyperspace_status.log
   return $?
 }
 
 while ! check_connection; do
   RETRY_COUNT=$((RETRY_COUNT+1))
   if [ $RETRY_COUNT -gt $MAX_RETRIES ]; then
-    echo "Failed to connect after $MAX_RETRIES attempts. Please check your configuration."
+    echo "Failed to connect after $MAX_RETRIES attempts. Please check logs."
     exit 1
   fi
   echo "Connection failed. Retrying attempt $RETRY_COUNT of $MAX_RETRIES..."
 
-  # **Stop current process inside screen**
-  screen -S hyperspace -X stuff $'\003'  # Sends Ctrl+C
+  # Reconnect inside the same screen
+  screen -S hyperspace -X stuff $'\003'  # Stop any running process
   sleep 2
-
-  # **Restart connection inside screen**
+  screen -S hyperspace -X stuff "aios-cli kill\n"
+  sleep 5
   screen -S hyperspace -X stuff "aios-cli start --connect\n"
-  sleep 10
+  sleep 5
+  screen -S hyperspace -X stuff "exec bash\n"  # Keep screen open
+  
+  sleep 30
 done
 
-echo "✅ Connection established successfully!"
-
-# **Detach from the screen (without terminating it)**
-screen -d hyperspace
-sleep 2
+echo "Connection established successfully!"
 
 # ----------------------------
 # Hive Allocation
 # ----------------------------
 echo "Allocating Hive RAM..."
-screen -S hyperspace -X stuff "aios-cli hive allocate 9\n"
-sleep 5
+if ! run_with_bashrc "aios-cli hive allocate 9"; then
+  echo "Failed to allocate Hive RAM. Retrying..."
+  sleep 5
+  run_with_bashrc "aios-cli hive allocate 9"
+fi
 
 echo "Checking Hive points..."
-screen -S hyperspace -X stuff "aios-cli hive points\n"
-sleep 5
-
-# **Detach the screen again after Hive allocation**
-screen -d hyperspace
+run_with_bashrc "aios-cli hive points"
 
 # ----------------------------
 # Key Backup
@@ -156,15 +162,16 @@ fi
 # Completion Message
 # ----------------------------
 echo "=============================================="
-echo "🎉 Setup complete!"
+echo "Setup complete! 🎉"
 if [ -f ~/.hyperspace/secure/key.pem ]; then
-  echo "🔐 Your private key is securely stored at ~/.hyperspace/secure/key.pem."
+  echo "Your private key is securely stored at ~/.hyperspace/secure/key.pem."
   echo "To access your key, use:"
   echo "  cat ~/.hyperspace/secure/key.pem"
 else
-  echo "⚠️ No private key found to back up. Check installation logs for errors."
+  echo "Note: No private key was found to back up. If this is unexpected,"
+  echo "please check the installation logs for errors."
 fi
 echo ""
-echo "🚀 Thank you for using the Hyperspace Node Setup Script by 0xjay_wins!"
-echo "📢 Follow me on X for updates: https://x.com/0xjay_wins"
+echo "Thank you for using the Hyperspace Node Setup Script by 0xjay_wins!"
+echo "Follow me on X for updates: https://x.com/0xjay_wins"
 echo "=============================================="
