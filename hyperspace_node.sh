@@ -144,9 +144,9 @@ aios-cli hive points
 # ----------------------------
 echo "=============================================="
 echo "Setup complete! 🎉"
-echo "Your private key is securely stored at ~/.hyperspace/secure/key.pem."
+echo "Your private key is securely stored at ~/.config/hyperspace/key.pem"
 echo "To access your key, use:"
-echo "  cat ~/.hyperspace/secure/key.pem"
+echo "  cat ~/.config/hyperspace/key.pem"
 echo ""
 echo "Thank you for using the Hyperspace Node Setup Script by 0xjay!"
 echo "Follow me on X for updates: https://x.com/0xjay_wins"
