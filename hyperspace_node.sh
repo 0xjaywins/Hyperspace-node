@@ -41,10 +41,11 @@ if [ -f ~/.config/key.pem ]; then
 fi
 
 # ----------------------------
-# Create a function to run commands in a properly sourced environment
+# Function to check if screen session exists
 # ----------------------------
-run_with_bashrc() {
-  bash --login -c "cd ~ && $*"
+check_screen() {
+    screen -ls | grep -q "hyperspace"
+    return $?
 }
 
 # ----------------------------
@@ -60,7 +61,7 @@ fi
 # Verify Installation
 # ----------------------------
 echo "Verifying installation..."
-if ! run_with_bashrc "command -v aios-cli"; then
+if ! command -v aios-cli &> /dev/null; then
   echo "Failed to find aios-cli. The installation may not have completed successfully."
   echo "Make sure to run 'source ~/.bashrc' or start a new terminal session."
   exit 1
@@ -69,28 +70,30 @@ fi
 # ----------------------------
 # Screen Session Setup (Fixed)
 # ----------------------------
-echo "Creating secure screen session and starting daemon..."
-screen -dmS hyperspace bash -c 'aios-cli start; exec bash'  # Keeps session active
+echo "Starting daemon inside screen session..."
+screen -dmS hyperspace bash -c 'aios-cli start; exec bash'  # Start daemon in screen
 
-# Wait for daemon to start
+# Wait until screen session is active
 echo "Waiting for daemon to start..."
-sleep 5
+sleep 10  # Give time for the daemon to fully start
+
+if ! check_screen; then
+  echo "Error: Screen session did not start properly."
+  exit 1
+fi
 
 # ----------------------------
-# Model Connection (Fixed)
+# Connect Model (Using Same Screen Session)
 # ----------------------------
-echo "Stopping logs and connecting model..."
+echo "Stopping logs inside screen session..."
 screen -S hyperspace -X stuff $'\003'  # Send Ctrl+C to stop logs
 sleep 2
 
-# Ensure the model connects inside the same screen session
+echo "Connecting model inside the same screen session..."
 screen -S hyperspace -X stuff "aios-cli start --connect\n"
-sleep 5  # Ensure it starts properly
+sleep 5
 
-# Keep screen session active while connecting
-screen -S hyperspace -X stuff "exec bash\n"
-
-echo "Detaching screen session..."
+echo "Detaching from screen session..."
 screen -d hyperspace
 
 echo "Waiting for connection to establish..."
@@ -118,7 +121,7 @@ while ! check_connection; do
   fi
   echo "Connection failed. Retrying attempt $RETRY_COUNT of $MAX_RETRIES..."
 
-  # Reconnect inside the same screen
+  # Stop any running instance inside the screen
   screen -S hyperspace -X stuff $'\003'  # Stop any running process
   sleep 2
   screen -S hyperspace -X stuff "aios-cli kill\n"
@@ -136,14 +139,14 @@ echo "Connection established successfully!"
 # Hive Allocation
 # ----------------------------
 echo "Allocating Hive RAM..."
-if ! run_with_bashrc "aios-cli hive allocate 9"; then
+if ! screen -S hyperspace -X stuff "aios-cli hive allocate 9\n"; then
   echo "Failed to allocate Hive RAM. Retrying..."
   sleep 5
-  run_with_bashrc "aios-cli hive allocate 9"
+  screen -S hyperspace -X stuff "aios-cli hive allocate 9\n"
 fi
 
 echo "Checking Hive points..."
-run_with_bashrc "aios-cli hive points"
+screen -S hyperspace -X stuff "aios-cli hive points\n"
 
 # ----------------------------
 # Key Backup
