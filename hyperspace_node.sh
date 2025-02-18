@@ -36,20 +36,6 @@ export PATH=$PATH:/usr/local/bin  # Add common binary directories to PATH if nee
 echo "Installing Hyperspace..."
 curl -s https://download.hyper.space/api/install | bash
 
-# Ensure aios-cli is in the PATH
-if ! command -v aios-cli &> /dev/null; then
-    echo "aios-cli not found in PATH. Attempting to locate it..."
-    # Try to find aios-cli in common locations
-    if [ -f ~/.local/bin/aios-cli ]; then
-        export PATH=$PATH:~/.local/bin
-    elif [ -f /usr/local/bin/aios-cli ]; then
-        export PATH=$PATH:/usr/local/bin
-    else
-        echo "Error: aios-cli not found. Please ensure it is installed and in your PATH."
-        exit 1
-    fi
-fi
-
 echo "Creating screen session..."
 screen -S hyperspace -dm
 
