@@ -47,6 +47,8 @@ if ! curl -s https://download.hyper.space/api/install | bash; then
   echo "Failed to install Hyperspace. Please check your internet connection."
   exit 1
 fi
+echo "Sourcing ~/.bashrc to load environment variables..."
+source ~/.bashrc
 
 # Verify installation
 if ! command -v aios-cli &> /dev/null; then
