@@ -79,23 +79,20 @@ fi
 # ----------------------------
 # Connection Setup (Using Same Screen)
 # ----------------------------
-echo "Setting up connection in the screen session..."
-echo "Attaching to the existing screen session..."
-
-# Attach to the existing screen session
-screen -r hyperspace
-
-# Manually stop logs using Ctrl+C
+echo "Setting up connection inside the existing screen session..."
 echo "Stopping logs inside screen session..."
 sleep 2
-screen -S hyperspace -X stuff $'\003'  # Sends Ctrl+C
 
-# Now manually run the connection command inside the session
+# **Stop the logs inside screen by sending Ctrl+C**
+screen -S hyperspace -X stuff $'\003'  
+sleep 2  
+
+# **Run the connection inside the same screen**
 echo "Starting AIOS connection..."
 screen -S hyperspace -X stuff "aios-cli start --connect\n"
 sleep 10  # Allow time for connection
 
-# Check if the connection is successful
+# **Check if the connection is successful**
 echo "Verifying connection..."
 MAX_RETRIES=3
 RETRY_COUNT=0
@@ -113,18 +110,18 @@ while ! check_connection; do
   fi
   echo "Connection failed. Retrying attempt $RETRY_COUNT of $MAX_RETRIES..."
 
-  # Stop current process
+  # **Stop current process inside screen**
   screen -S hyperspace -X stuff $'\003'  # Sends Ctrl+C
   sleep 2
 
-  # Restart connection inside screen
+  # **Restart connection inside screen**
   screen -S hyperspace -X stuff "aios-cli start --connect\n"
   sleep 10
 done
 
-echo "Connection established successfully!"
+echo "✅ Connection established successfully!"
 
-# Detach from the screen **only after** a successful connection
+# **Detach from the screen (without terminating it)**
 screen -d hyperspace
 sleep 2
 
@@ -132,7 +129,6 @@ sleep 2
 # Hive Allocation
 # ----------------------------
 echo "Allocating Hive RAM..."
-screen -r hyperspace
 screen -S hyperspace -X stuff "aios-cli hive allocate 9\n"
 sleep 5
 
@@ -140,7 +136,7 @@ echo "Checking Hive points..."
 screen -S hyperspace -X stuff "aios-cli hive points\n"
 sleep 5
 
-# Detach the screen after Hive allocation
+# **Detach the screen again after Hive allocation**
 screen -d hyperspace
 
 # ----------------------------
@@ -160,16 +156,15 @@ fi
 # Completion Message
 # ----------------------------
 echo "=============================================="
-echo "Setup complete! 🎉"
+echo "🎉 Setup complete!"
 if [ -f ~/.hyperspace/secure/key.pem ]; then
-  echo "Your private key is securely stored at ~/.hyperspace/secure/key.pem."
+  echo "🔐 Your private key is securely stored at ~/.hyperspace/secure/key.pem."
   echo "To access your key, use:"
   echo "  cat ~/.hyperspace/secure/key.pem"
 else
-  echo "Note: No private key was found to back up. If this is unexpected,"
-  echo "please check the installation logs for errors."
+  echo "⚠️ No private key found to back up. Check installation logs for errors."
 fi
 echo ""
-echo "Thank you for using the Hyperspace Node Setup Script by 0xjay_wins!"
-echo "Follow me on X for updates: https://x.com/0xjay_wins"
+echo "🚀 Thank you for using the Hyperspace Node Setup Script by 0xjay_wins!"
+echo "📢 Follow me on X for updates: https://x.com/0xjay_wins"
 echo "=============================================="
