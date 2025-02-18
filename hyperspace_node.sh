@@ -1,6 +1,24 @@
 #!/bin/bash
+# Hyperspace Node Setup Script (Secure and Simple)
+# Brought to you by 0xjay_wins 🚀
+# ----------------------------
+# Welcome Message
+# ----------------------------
+echo "=============================================="
+echo "Welcome to the Hyperspace Node Setup Script!"
+echo "Curated with ❤️ by 0xjay_wins"
+echo "Follow me on X: https://x.com/0xjay_wins"
+echo "=============================================="
+echo ""
 
-# Hyperspace Node Setup Script (Clean Install + Auto-Setup)
+# ----------------------------
+# Install dependencies
+# ----------------------------
+echo "Checking for required dependencies..."
+if ! command -v screen &> /dev/null; then
+    echo "Installing screen..."
+    sudo apt-get update && sudo apt-get install -y screen
+fi
 
 # Cleanup
 echo "Cleaning up previous installations..."
@@ -116,3 +134,16 @@ echo "Saving private key..."
 
 echo "Setup complete! Key saved to ~/hyperspace_key.pem"
 aios-cli hive points
+
+# ----------------------------
+# Completion Message
+# ----------------------------
+echo "=============================================="
+echo "Setup complete! 🎉"
+echo "Your private key is securely stored at ~/.hyperspace/secure/key.pem."
+echo "To access your key, use:"
+echo "  cat ~/.hyperspace/secure/key.pem"
+echo ""
+echo "Thank you for using the Hyperspace Node Setup Script by 0xjay_wins!"
+echo "Follow me on X for updates: https://x.com/0xjay_wins"
+echo "=============================================="
