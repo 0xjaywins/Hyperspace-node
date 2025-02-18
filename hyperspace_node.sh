@@ -66,15 +66,20 @@ if ! run_with_bashrc "command -v aios-cli"; then
 fi
 
 # ----------------------------
-# Initialize daemon directly without screen
+# Improved Screen Management for Daemon
 # ----------------------------
-echo "Starting daemon directly (without screen)..."
-run_with_bashrc "aios-cli start" &
-sleep 10  # Give it time to start
+echo "Starting daemon in a screen session..."
 
-# ----------------------------
-# Model Setup
-# ----------------------------
+# Kill any existing sessions and processes (already done in cleanup, but just to be sure)
+pkill -f "aios-cli" || true
+screen -XS hyperspace quit 2>/dev/null || true
+
+# Create a new screen session for the daemon
+screen -dmS hyperspace bash -c "source ~/.bashrc && aios-cli start; exec bash"
+echo "Daemon started in screen session 'hyperspace'"
+sleep 10  # Give it time to initialize
+
+# Detach from screen to continue with model installation
 echo "Installing Mistral-7B model..."
 # Try multiple times in case of failure
 MAX_ATTEMPTS=3
@@ -93,37 +98,26 @@ for i in $(seq 1 $MAX_ATTEMPTS); do
   fi
 done
 
-# ----------------------------
-# Connection
-# ----------------------------
-echo "Connecting to the model..."
-# Try multiple times in case of failure
-for i in $(seq 1 $MAX_ATTEMPTS); do
-  if run_with_bashrc "aios-cli start --connect"; then
-    echo "Connection established successfully on attempt $i."
-    break
-  else
-    echo "Failed to connect on attempt $i of $MAX_ATTEMPTS."
-    if [ $i -eq $MAX_ATTEMPTS ]; then
-      echo "Max attempts reached. Moving on..."
-    else
-      echo "Killing daemon and retrying..."
-      run_with_bashrc "aios-cli kill" || true
-      sleep 5
-      run_with_bashrc "aios-cli start" &
-      sleep 10
-    fi
-  fi
-done
+# Now reattach to the screen session to connect to the model
+echo "Connecting to model in screen session..."
+screen -S hyperspace -X stuff "aios-cli connect^M"  # ^M is Enter key
+sleep 5
 
 # ----------------------------
 # Verify Connection
 # ----------------------------
 echo "Verifying connection status..."
 if run_with_bashrc "aios-cli status | grep -q connected"; then
-  echo "Successfully connected to model."
+  echo "Successfully connected to model in screen session."
 else
-  echo "Warning: Could not verify connection. Continuing anyway..."
+  echo "Warning: Could not verify connection. Attempting to connect again..."
+  screen -S hyperspace -X stuff "aios-cli connect^M"  # Try again
+  sleep 5
+  
+  # Check again after second attempt
+  if ! run_with_bashrc "aios-cli status | grep -q connected"; then
+    echo "Warning: Still could not verify connection. Continuing anyway..."
+  fi
 fi
 
 # ----------------------------
@@ -152,12 +146,9 @@ else
   echo "Warning: key.pem not found in ~/.config/. Please check if key was generated."
 fi
 
-# ----------------------------
-# Create a screen session at the end for monitoring
-# ----------------------------
-echo "Creating a screen session for monitoring the daemon..."
-run_with_bashrc "screen -S hyperspace -dm bash -c 'aios-cli start --connect; exec bash'"
-echo "Screen session 'hyperspace' created. You can attach to it with 'screen -r hyperspace'"
+# Detach from screen again to continue with the rest of the script
+echo "Daemon and model connection running in screen session 'hyperspace'"
+echo "You can attach to it anytime with 'screen -r hyperspace'"
 
 # ----------------------------
 # Completion Message
