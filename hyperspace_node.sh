@@ -47,6 +47,32 @@ run_with_bashrc() {
 }
 
 # ----------------------------
+# Create a function to monitor and restart daemon if needed
+# ----------------------------
+restart_daemon_if_needed() {
+  # Create a temporary file for output
+  temp_output=$(mktemp)
+  
+  # Run the command and capture output
+  screen -S hyperspace -X stuff "aios-cli status > $temp_output 2>&1^M"
+  sleep 2
+  
+  # Check if "Another instance is already running" is in the output
+  if grep -q "Another instance is already running" "$temp_output"; then
+    echo "Detected 'Another instance is already running'. Killing and restarting daemon..."
+    screen -S hyperspace -X stuff "aios-cli kill^M"
+    sleep 3
+    screen -S hyperspace -X stuff "aios-cli start^M"
+    sleep 10
+    return 0
+  fi
+  
+  # Clean up
+  rm -f "$temp_output"
+  return 1
+}
+
+# ----------------------------
 # Installation
 # ----------------------------
 echo "Installing Hyperspace..."
@@ -79,6 +105,9 @@ screen -dmS hyperspace bash -c "source ~/.bashrc && aios-cli start; exec bash"
 echo "Daemon started in screen session 'hyperspace'"
 sleep 10  # Give it time to initialize
 
+# Check if we need to restart daemon (e.g., if "Another instance is already running")
+restart_daemon_if_needed
+
 # Detach from screen to continue with model installation
 echo "Installing Mistral-7B model..."
 # Try multiple times in case of failure
@@ -89,6 +118,12 @@ for i in $(seq 1 $MAX_ATTEMPTS); do
     break
   else
     echo "Failed to install model on attempt $i of $MAX_ATTEMPTS."
+    
+    # Check if daemon needs restart
+    if restart_daemon_if_needed; then
+      echo "Daemon restarted due to 'Another instance is already running' error."
+    fi
+    
     if [ $i -eq $MAX_ATTEMPTS ]; then
       echo "Max attempts reached. Moving on..."
     else
@@ -100,6 +135,10 @@ done
 
 # Now reattach to the screen session to connect to the model
 echo "Connecting to model in screen session..."
+
+# Check if daemon needs restart before connecting
+restart_daemon_if_needed
+
 screen -S hyperspace -X stuff "aios-cli connect^M"  # ^M is Enter key
 sleep 5
 
@@ -110,9 +149,19 @@ echo "Verifying connection status..."
 if run_with_bashrc "aios-cli status | grep -q connected"; then
   echo "Successfully connected to model in screen session."
 else
-  echo "Warning: Could not verify connection. Attempting to connect again..."
-  screen -S hyperspace -X stuff "aios-cli connect^M"  # Try again
-  sleep 5
+  echo "Warning: Could not verify connection. Checking for daemon issues..."
+  
+  # Check if daemon needs restart
+  if restart_daemon_if_needed; then
+    echo "Daemon restarted due to 'Another instance is already running' error."
+    echo "Trying to connect again..."
+    screen -S hyperspace -X stuff "aios-cli connect^M"
+    sleep 5
+  else
+    echo "Attempting to connect again anyway..."
+    screen -S hyperspace -X stuff "aios-cli connect^M"  # Try again
+    sleep 5
+  fi
   
   # Check again after second attempt
   if ! run_with_bashrc "aios-cli status | grep -q connected"; then
@@ -125,7 +174,14 @@ fi
 # ----------------------------
 echo "Allocating Hive RAM..."
 if ! run_with_bashrc "aios-cli hive allocate 9"; then
-  echo "Failed to allocate Hive RAM. Retrying..."
+  echo "Failed to allocate Hive RAM. Checking for daemon issues..."
+  
+  # Check if daemon needs restart
+  if restart_daemon_if_needed; then
+    echo "Daemon restarted due to 'Another instance is already running' error."
+  fi
+  
+  echo "Retrying Hive allocation..."
   sleep 5
   run_with_bashrc "aios-cli hive allocate 9"
 fi
